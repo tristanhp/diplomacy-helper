@@ -22,9 +22,6 @@ const typeColor: Record<Province['type'], string> = {
 export function MapView() {
   const state = useGameStore((s) => s.state);
 
-  // Spread factor to increase spacing of nodes
-  const [spread, setSpread] = useState(1.35);
-
   // Transformed positions: radial spread from layout center, then fit to canvas with margins
   const POS = useMemo(() => {
     const ids = Object.keys(state.map) as ProvinceID[];
@@ -35,7 +32,7 @@ export function MapView() {
     let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
     for (const { p } of pts) { minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x); minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y); }
     const cx = (minX + maxX) / 2; const cy = (minY + maxY) / 2;
-    const expanded = pts.map(({ id, p }) => ({ id, x: cx + (p.x - cx) * spread, y: cy + (p.y - cy) * spread }));
+    const expanded = pts.map(({ id, p }) => ({ id, x: cx + (p.x - cx) * 1.35, y: cy + (p.y - cy) * 1.35 }));
     // Fit to canvas with margin
     const M = 60;
     let exMinX = Infinity, exMaxX = -Infinity, exMinY = Infinity, exMaxY = -Infinity;
@@ -53,7 +50,7 @@ export function MapView() {
       };
     }
     return out;
-  }, [state.map, spread]);
+  }, [state.map]);
 
   const unitsByProv: Record<string, Unit[]> = {};
   (Object.values(state.units) as Unit[]).forEach((u) => {
@@ -114,13 +111,6 @@ export function MapView() {
           {/* Edges toggle removed */}
           <label className="inline-flex items-center gap-1"><input type="checkbox" className="accent-slate-300" checked={showLabels} onChange={(e)=>setShowLabels(e.target.checked)} />Labels</label>
             {/* Zoom controls removed to lock zoom */}
-          <div className="flex items-center gap-2">
-            <label className="flex items-center gap-1">
-              <span>Spread</span>
-              <input type="range" min={1} max={1.7} step={0.05} value={spread} onChange={(e)=>setSpread(parseFloat((e.target as HTMLInputElement).value))} />
-              <span className="w-10 text-right tabular-nums">{spread.toFixed(2)}</span>
-            </label>
-          </div>
         </div>
       </div>
     <div className="w-full overflow-hidden" ref={wrapRef}>

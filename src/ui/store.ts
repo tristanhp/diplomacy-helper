@@ -60,13 +60,40 @@ export const useGameStore = create<GameStore>((set, get) => {
     const s = get();
     const { nextState } = adjudicateRetreats(s.state, decisions);
     const winner = checkVictory(nextState);
-    set({ state: nextState, winner, retreatOptions: [] });
+    
+    // After retreats, check if we should start drafting for next phase
+    if (nextState.phase.type === 'Adjustments') {
+      // Go to adjustments phase (no drafting)
+      set({ state: nextState, winner, retreatOptions: [] });
+    } else if (nextState.phase.type === 'Orders') {
+      // Go to next orders phase - start drafting
+      const order: Power[] = ['England','France','Germany','Italy','Austria','Russia','Turkey'];
+      const present = new Set<Power>(Object.values(nextState.units).map((u) => u.power) as Power[]);
+      const powers = order.filter((p) => present.has(p));
+      set({ 
+        state: nextState, 
+        winner, 
+        retreatOptions: [], 
+        drafting: { active: true, powers, index: 0, drafts: {} },
+        pendingOrders: []
+      });
+    }
   },
   resolveAdjustments: (decisions) => {
     const s = get();
     const { nextState } = adjudicateAdjustments(s.state, decisions);
     const winner = checkVictory(nextState);
-    set({ state: nextState, winner });
+    
+    // After adjustments, always start drafting for next orders phase
+    const order: Power[] = ['England','France','Germany','Italy','Austria','Russia','Turkey'];
+    const present = new Set<Power>(Object.values(nextState.units).map((u) => u.power) as Power[]);
+    const powers = order.filter((p) => present.has(p));
+    set({ 
+      state: nextState, 
+      winner,
+      drafting: { active: true, powers, index: 0, drafts: {} },
+      pendingOrders: []
+    });
   },
   startDraft: () => {
     const s = get();
@@ -109,19 +136,42 @@ export const useGameStore = create<GameStore>((set, get) => {
     const { nextState, retreats } = adjudicateOrders(s.state, all as Order[]);
     const winner = checkVictory(nextState);
     
-    // Restart drafting for next phase with updated powers
-    const order: Power[] = ['England','France','Germany','Italy','Austria','Russia','Turkey'];
-    const present = new Set<Power>(Object.values(nextState.units).map((u) => u.power) as Power[]);
-    const newPowers = order.filter((p) => present.has(p));
-    
-    set({ 
-      state: nextState, 
-      winner, 
-      pendingOrders: [], 
-      retreatOptions: retreats, 
-      drafting: { active: true, powers: newPowers, index: 0, drafts: {} }, 
-      revealVisible: true 
-    });
+    // Check what phase we're in after adjudication
+    if (nextState.phase.type === 'Retreats') {
+      // If we have retreats to handle, stop drafting and show retreat interface
+      set({ 
+        state: nextState, 
+        winner, 
+        pendingOrders: [], 
+        retreatOptions: retreats, 
+        drafting: { active: false, powers: [], index: 0, drafts: {} },
+        revealVisible: true 
+      });
+    } else if (nextState.phase.type === 'Adjustments') {
+      // If we're directly in adjustments (no retreats), stop drafting and show adjustment interface
+      set({ 
+        state: nextState, 
+        winner, 
+        pendingOrders: [], 
+        retreatOptions: [], 
+        drafting: { active: false, powers: [], index: 0, drafts: {} },
+        revealVisible: true 
+      });
+    } else {
+      // If we're in the next orders phase, restart drafting for next phase
+      const order: Power[] = ['England','France','Germany','Italy','Austria','Russia','Turkey'];
+      const present = new Set<Power>(Object.values(nextState.units).map((u) => u.power) as Power[]);
+      const newPowers = order.filter((p) => present.has(p));
+      
+      set({ 
+        state: nextState, 
+        winner, 
+        pendingOrders: [], 
+        retreatOptions: [], 
+        drafting: { active: true, powers: newPowers, index: 0, drafts: {} }, 
+        revealVisible: true 
+      });
+    }
   },
   hideReveal: () => set({ revealVisible: false }),
 }});

@@ -12,14 +12,14 @@ function scKey(id: string): string {
 export function createInitialState(): GameState {
   const map = createStandardMap();
 
-  // Full standard 1901 setup
+  // Full standard 1901 setup - Modified for testing Brest capture
   const units: Record<string, Unit> = {
-    // England
-    e_f_lon: { id: 'e_f_lon', power: 'England', type: 'Fleet', location: 'lon' },
-    e_f_edi: { id: 'e_f_edi', power: 'England', type: 'Fleet', location: 'edi' },
+    // England - positioned for Brest capture test
+    e_f_eng: { id: 'e_f_eng', power: 'England', type: 'Fleet', location: 'eng' }, // Fleet in English Channel
+    e_f_pic: { id: 'e_f_pic', power: 'England', type: 'Fleet', location: 'pic' }, // Fleet in Picardy for support
     e_a_lvp: { id: 'e_a_lvp', power: 'England', type: 'Army', location: 'lvp' },
     // France
-    f_f_bre: { id: 'f_f_bre', power: 'France', type: 'Fleet', location: 'bre' },
+    f_f_bre: { id: 'f_f_bre', power: 'France', type: 'Fleet', location: 'bre' }, // French fleet defending Brest
     f_a_par: { id: 'f_a_par', power: 'France', type: 'Army', location: 'par' },
     f_a_mar: { id: 'f_a_mar', power: 'France', type: 'Army', location: 'mar' },
     // Germany
@@ -59,7 +59,7 @@ export function createInitialState(): GameState {
     map,
     units,
     scOwners,
-    phase: { year: 1901, season: 'Spring', type: 'Orders' },
+    phase: { year: 1901, season: 'Fall', type: 'Orders' }, // Start in Fall for testing SC capture
     history: [],
   };
 }

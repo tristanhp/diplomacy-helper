@@ -223,6 +223,13 @@ function resolveMoves(state: GameState, orders: Order[], context: ReturnType<typ
 
   // apply moves
   const newUnits = { ...state.units };
+  
+  // Remove dislodged units first
+  for (const d of dislodged) {
+    delete newUnits[d.unitId];
+  }
+  
+  // Then apply successful moves
   for (const [uid, loc] of Object.entries(newLocations)) {
     newUnits[uid] = { ...newUnits[uid], location: loc };
   }
