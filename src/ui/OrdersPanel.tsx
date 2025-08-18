@@ -7,18 +7,26 @@ function uid() { return Math.random().toString(36).slice(2); }
 
 export function OrdersPanel() {
   const state = useGameStore((s) => s.state);
+  const drafting = useGameStore((s) => s.drafting);
   const pendingOrders = useGameStore((s) => s.pendingOrders);
   const addOrder = useGameStore((s) => s.addOrder);
   const removeOrder = useGameStore((s) => s.removeOrder);
   const clearOrders = useGameStore((s) => s.clearOrders);
   const resolveOrders = useGameStore((s) => s.resolveOrders);
+  const submitCurrentDraft = useGameStore((s) => s.submitCurrentDraft);
+  const previousDraft = useGameStore((s) => s.previousDraft);
+  const revealAndResolve = useGameStore((s) => s.revealAndResolve);
 
   const [selectedUnit, setSelectedUnit] = useState<string | null>(null);
   const [orderType, setOrderType] = useState<'Hold'|'Move'|'SupportHold'|'SupportMove'|'Convoy'>('Hold');
   const [to, setTo] = useState<string>('');
   const [targetUnit, setTargetUnit] = useState<string>('');
 
-  const units = Object.values(state.units);
+  const unitsAll = Object.values(state.units);
+  const currentPower = drafting.active ? drafting.powers[drafting.index] : undefined;
+  const units = drafting.active && currentPower
+    ? unitsAll.filter((u) => u.power === currentPower)
+    : unitsAll;
   const provinces = Object.values(state.map);
 
   const u = selectedUnit ? state.units[selectedUnit] : null;
@@ -209,9 +217,9 @@ export function OrdersPanel() {
   };
 
   return (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
       <div className="rounded border border-slate-700 p-3">
-        <div className="mb-2 text-lg font-semibold">Units</div>
+        <div className="mb-2 text-lg font-semibold">Units - {currentPower ?? 'None'}</div>
         <ul className="space-y-1">
           {units.map((u) => (
             <li key={u.id}>
@@ -264,6 +272,18 @@ export function OrdersPanel() {
       </div>
 
       <OrdersList />
+      
+      <div className="rounded border border-slate-700 p-3">
+        <div className="mb-2 text-lg font-semibold">Turn Controls</div>
+        <div className="flex flex-col gap-2">
+          <div className="text-sm text-slate-300">Current: {currentPower ?? '—'} ({drafting.index+1}/{drafting.powers.length})</div>
+          <div className="flex gap-2">
+            <button className="rounded bg-slate-700 px-3 py-1 hover:bg-slate-600 disabled:opacity-50" onClick={previousDraft} disabled={drafting.index===0}>Previous</button>
+            <button className="rounded bg-emerald-600 px-3 py-1 hover:bg-emerald-500" onClick={submitCurrentDraft} disabled={!currentPower}>Save & Next</button>
+            <button className="rounded bg-indigo-600 px-3 py-1 hover:bg-indigo-500" onClick={revealAndResolve} disabled={drafting.index < drafting.powers.length-1}>Reveal & Resolve</button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -273,14 +293,14 @@ function OrdersList() {
   const removeOrder = useGameStore((s) => s.removeOrder);
   const clearOrders = useGameStore((s) => s.clearOrders);
   const resolveOrders = useGameStore((s) => s.resolveOrders);
+  const drafting = useGameStore((s) => s.drafting);
 
   return (
     <div className="rounded border border-slate-700 p-3">
       <div className="mb-2 flex items-center justify-between">
-        <div className="text-lg font-semibold">Pending Orders</div>
+        <div className="text-lg font-semibold">Pending Orders (Hidden from other players)</div>
         <div className="space-x-2">
           <button className="rounded bg-slate-700 px-2 py-1 hover:bg-slate-600" onClick={clearOrders}>Clear</button>
-          <button className="rounded bg-indigo-600 px-3 py-1 hover:bg-indigo-500" onClick={resolveOrders}>Resolve</button>
         </div>
       </div>
       <ul className="space-y-1">

@@ -5,8 +5,10 @@ import { MapView } from './MapView';
 import type { ProvinceID, Unit } from '../engine/types';
 
 export function App() {
-  const phase = useGameStore((s: GameStore) => s.state.phase);
-  const winner = useGameStore((s: GameStore) => s.winner);
+  const phase = useGameStore((s) => s.state.phase);
+  const winner = useGameStore((s) => s.winner);
+  const revealVisible = useGameStore((s) => s.revealVisible);
+  const hideReveal = useGameStore((s) => s.hideReveal);
 
   return (
     <div className="min-h-screen p-4">
@@ -24,6 +26,18 @@ export function App() {
       {phase.type === 'Orders' && <OrdersPanel />}
       {phase.type === 'Retreats' && <RetreatsPanel />}
       {phase.type === 'Adjustments' && <AdjustmentsPanel />}
+
+      {revealVisible && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="max-w-3xl w-full rounded bg-slate-900 p-4 text-slate-100 shadow-xl border border-slate-700">
+            <h2 className="mb-3 text-xl font-semibold">Orders Resolved</h2>
+            <p className="mb-4 text-sm text-slate-300">Orders have been revealed and adjudicated. Review the map and proceed.</p>
+            <div className="text-right">
+              <button className="rounded bg-emerald-600 px-3 py-2 hover:bg-emerald-500" onClick={hideReveal}>Continue</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -106,8 +120,23 @@ function AdjustmentsPanel() {
   const toggleBuild = (power: string, type: 'Army'|'Fleet', location: string) => {
     setBuilds((b) => {
       const idx = b.findIndex((x) => x.power===power && x.location===location && x.type===type);
-      if (idx >= 0) return [...b.slice(0, idx), ...b.slice(idx+1)];
-      return [...b, { power, type, location }];
+      if (idx >= 0) {
+        // Remove this specific build
+        return [...b.slice(0, idx), ...b.slice(idx+1)];
+      } else {
+        // Check how many builds this power already has selected
+        const currentBuildsForPower = b.filter((x) => x.power === power).length;
+        const maxBuilds = deltas[power] > 0 ? deltas[power] : 0;
+        
+        if (currentBuildsForPower >= maxBuilds) {
+          // Already at max builds, don't add more
+          return b;
+        }
+        
+        // Remove any other type at this location first, then add the new one
+        const filtered = b.filter((x) => !(x.power===power && x.location===location));
+        return [...filtered, { power, type, location }];
+      }
     });
   };
 

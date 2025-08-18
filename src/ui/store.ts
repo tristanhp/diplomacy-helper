@@ -1,28 +1,52 @@
 import create from 'zustand';
-import { GameState, Order, ProvinceID } from '../engine/types';
+import { GameState, Order, ProvinceID, Power } from '../engine/types';
 import { createInitialState } from '../engine/initial';
 import { adjudicateAdjustments, adjudicateOrders, adjudicateRetreats, checkVictory } from '../engine/adjudicate';
 
 export type UIOrder = Order & { text?: string };
+
+type DraftingState = {
+  active: boolean;
+  powers: Power[];
+  index: number;
+  drafts: Partial<Record<Power, UIOrder[]>>;
+};
 
 export interface GameStore {
   state: GameState;
   pendingOrders: UIOrder[];
   winner: string | null;
   retreatOptions: { unitId: string; options: ProvinceID[] }[];
+  drafting: DraftingState;
+  revealVisible: boolean;
   addOrder: (o: UIOrder) => void;
   removeOrder: (id: string) => void;
   clearOrders: () => void;
   resolveOrders: () => void;
   resolveRetreats: (decisions: { unitId: string; to?: ProvinceID }[]) => void;
   resolveAdjustments: (decisions: Parameters<typeof adjudicateAdjustments>[1]) => void;
+  startDraft: () => void;
+  submitCurrentDraft: () => void;
+  previousDraft: () => void;
+  cancelDraft: () => void;
+  revealAndResolve: () => void;
+  hideReveal: () => void;
 }
 
-export const useGameStore = create<GameStore>((set, get) => ({
-  state: createInitialState(),
+export const useGameStore = create<GameStore>((set, get) => {
+  // Initialize with proper power list on first load
+  const initialState = createInitialState();
+  const order: Power[] = ['England','France','Germany','Italy','Austria','Russia','Turkey'];
+  const present = new Set<Power>(Object.values(initialState.units).map((u) => u.power) as Power[]);
+  const powers = order.filter((p) => present.has(p));
+
+  return {
+  state: initialState,
   pendingOrders: [],
   winner: null,
   retreatOptions: [],
+  drafting: { active: true, powers, index: 0, drafts: {} },
+  revealVisible: false,
   addOrder: (o) => set((s) => ({ pendingOrders: [...s.pendingOrders, o] })),
   removeOrder: (id) => set((s) => ({ pendingOrders: s.pendingOrders.filter((o) => o.id !== id) })),
   clearOrders: () => set({ pendingOrders: [] }),
@@ -44,4 +68,60 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const winner = checkVictory(nextState);
     set({ state: nextState, winner });
   },
-}));
+  startDraft: () => {
+    const s = get();
+    const order: Power[] = ['England','France','Germany','Italy','Austria','Russia','Turkey'];
+    const present = new Set<Power>(Object.values(s.state.units).map((u) => u.power) as Power[]);
+    const powers = order.filter((p) => present.has(p));
+    set({ drafting: { active: true, powers, index: 0, drafts: {} }, pendingOrders: [] });
+  },
+  submitCurrentDraft: () => {
+    const s = get();
+    if (!s.drafting.active) return;
+    const pwr = s.drafting.powers[s.drafting.index];
+    if (!pwr) return;
+    const mine = (s.pendingOrders as UIOrder[]).filter((o) => o.power === pwr);
+    const drafts = { ...(s.drafting.drafts || {}) };
+    drafts[pwr] = mine;
+    const nextIdx = s.drafting.index + 1;
+    // Don't advance beyond the last power
+    if (nextIdx >= s.drafting.powers.length) return;
+    const nextPwr = s.drafting.powers[nextIdx];
+    const nextPending = nextPwr ? (drafts[nextPwr] || []) : [];
+    set({ drafting: { ...s.drafting, drafts, index: nextIdx }, pendingOrders: nextPending });
+  },
+  previousDraft: () => {
+    const s = get();
+    if (!s.drafting.active) return;
+    const prevIdx = Math.max(0, s.drafting.index - 1);
+    const prevPwr = s.drafting.powers[prevIdx];
+    const pending = (s.drafting.drafts[prevPwr] || []) as UIOrder[];
+    set({ drafting: { ...s.drafting, index: prevIdx }, pendingOrders: pending });
+  },
+  cancelDraft: () => set({ drafting: { active: false, powers: [], index: 0, drafts: {} }, pendingOrders: [] }),
+  revealAndResolve: () => {
+    const s = get();
+    if (!s.drafting.active) return;
+    const lastPwr = s.drafting.powers[s.drafting.index];
+    const drafts = { ...(s.drafting.drafts || {}) } as Partial<Record<Power, UIOrder[]>>;
+    if (lastPwr) drafts[lastPwr] = (s.pendingOrders as UIOrder[]).filter((o) => o.power === lastPwr);
+    const all: UIOrder[] = s.drafting.powers.flatMap((p) => drafts[p] || []);
+    const { nextState, retreats } = adjudicateOrders(s.state, all as Order[]);
+    const winner = checkVictory(nextState);
+    
+    // Restart drafting for next phase with updated powers
+    const order: Power[] = ['England','France','Germany','Italy','Austria','Russia','Turkey'];
+    const present = new Set<Power>(Object.values(nextState.units).map((u) => u.power) as Power[]);
+    const newPowers = order.filter((p) => present.has(p));
+    
+    set({ 
+      state: nextState, 
+      winner, 
+      pendingOrders: [], 
+      retreatOptions: retreats, 
+      drafting: { active: true, powers: newPowers, index: 0, drafts: {} }, 
+      revealVisible: true 
+    });
+  },
+  hideReveal: () => set({ revealVisible: false }),
+}});
