@@ -1,4 +1,4 @@
-import create from 'zustand';
+import { create } from 'zustand';
 import { GameState, Order, ProvinceID, Power } from '../engine/types';
 import { createInitialState } from '../engine/initial';
 import { adjudicateAdjustments, adjudicateOrders, adjudicateRetreats, checkVictory } from '../engine/adjudicate';

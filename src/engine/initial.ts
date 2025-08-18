@@ -12,14 +12,14 @@ function scKey(id: string): string {
 export function createInitialState(): GameState {
   const map = createStandardMap();
 
-  // Full standard 1901 setup - Modified for testing Brest capture
+  // Standard 1901 starting positions
   const units: Record<string, Unit> = {
-    // England - positioned for Brest capture test
-    e_f_eng: { id: 'e_f_eng', power: 'England', type: 'Fleet', location: 'eng' }, // Fleet in English Channel
-    e_f_pic: { id: 'e_f_pic', power: 'England', type: 'Fleet', location: 'pic' }, // Fleet in Picardy for support
+    // England
+    e_f_edi: { id: 'e_f_edi', power: 'England', type: 'Fleet', location: 'edi' },
+    e_f_lon: { id: 'e_f_lon', power: 'England', type: 'Fleet', location: 'lon' },
     e_a_lvp: { id: 'e_a_lvp', power: 'England', type: 'Army', location: 'lvp' },
     // France
-    f_f_bre: { id: 'f_f_bre', power: 'France', type: 'Fleet', location: 'bre' }, // French fleet defending Brest
+    f_f_bre: { id: 'f_f_bre', power: 'France', type: 'Fleet', location: 'bre' },
     f_a_par: { id: 'f_a_par', power: 'France', type: 'Army', location: 'par' },
     f_a_mar: { id: 'f_a_mar', power: 'France', type: 'Army', location: 'mar' },
     // Germany
@@ -38,7 +38,7 @@ export function createInitialState(): GameState {
     r_a_mos: { id: 'r_a_mos', power: 'Russia', type: 'Army', location: 'mos' },
     r_a_war: { id: 'r_a_war', power: 'Russia', type: 'Army', location: 'war' },
     r_f_sev: { id: 'r_f_sev', power: 'Russia', type: 'Fleet', location: 'sev' },
-  r_f_stp: { id: 'r_f_stp', power: 'Russia', type: 'Fleet', location: 'stp-sc' },
+    r_f_stp: { id: 'r_f_stp', power: 'Russia', type: 'Fleet', location: 'stp-sc' },
     // Turkey
     t_a_con: { id: 't_a_con', power: 'Turkey', type: 'Army', location: 'con' },
     t_a_smy: { id: 't_a_smy', power: 'Turkey', type: 'Army', location: 'smy' },
@@ -59,7 +59,7 @@ export function createInitialState(): GameState {
     map,
     units,
     scOwners,
-    phase: { year: 1901, season: 'Fall', type: 'Orders' }, // Start in Fall for testing SC capture
+    phase: { year: 1901, season: 'Spring', type: 'Orders' },
     history: [],
   };
 }
