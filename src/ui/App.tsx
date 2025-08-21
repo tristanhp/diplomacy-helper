@@ -9,12 +9,30 @@ export function App() {
   const winner = useGameStore((s) => s.winner);
   const revealVisible = useGameStore((s) => s.revealVisible);
   const hideReveal = useGameStore((s) => s.hideReveal);
+  const downloadGameHistory = useGameStore((s) => s.downloadGameHistory);
+  const downloadGameHistoryImage = useGameStore((s) => s.downloadGameHistoryImage);
 
   return (
     <div className="min-h-screen p-4">
       <header className="mb-4 flex items-center justify-between">
         <h1 className="text-xl font-bold">Diplomacy Adjudicator</h1>
-        <div className="text-sm text-slate-300">{phase.season} {phase.type} {phase.year}</div>
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={downloadGameHistory}
+            className="rounded bg-blue-600 px-3 py-1 text-sm hover:bg-blue-500"
+            title="Download game history as text file"
+          >
+            📄 Text
+          </button>
+          <button 
+            onClick={downloadGameHistoryImage}
+            className="rounded bg-purple-600 px-3 py-1 text-sm hover:bg-purple-500"
+            title="Download game history as image"
+          >
+            🖼️ Image
+          </button>
+          <div className="text-sm text-slate-300">{phase.season} {phase.type} {phase.year}</div>
+        </div>
       </header>
 
       {winner && (
